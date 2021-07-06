@@ -33,8 +33,8 @@ function login() {
         })
         .then(data => {
             console.log(data);
-            if (data.token) {
-                //Cookies.set('JWT', data.token);
+            if (data.jwtToken) {
+                Cookies.set('Authorization', data.jwtToken);
                 location.href = "index.html";
             }
         })

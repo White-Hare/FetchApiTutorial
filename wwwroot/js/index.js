@@ -1,8 +1,10 @@
 ﻿const uri = 'api/v1/Tasks';
 
+
 const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer: ' + Cookies.get('Authorization')
 }
 
 let tasks = [];
@@ -96,6 +98,8 @@ function updateItem() {
         content: itemContent
     };
 
+    console.log(item);
+
     fetch(`${uri}/${itemId}`, {
         method: 'PUT',
         headers: headers,
@@ -130,6 +134,7 @@ function _displayItems(data) {
 
     const button = document.createElement('button');
 
+    console.log(data);
     data.forEach(item => {
         let editButton = button.cloneNode(false);
         editButton.innerText = 'Düzenle';

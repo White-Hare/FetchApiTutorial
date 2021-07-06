@@ -42,7 +42,6 @@ namespace FetchApiTutorial.Services.MyTaskService
         public async Task<bool> UpdateAsync(string id, MyTask task)
         {
             var filter = Builders<MyTask>.Filter.Eq(t => t.Id, new ObjectId(id));
-            task.Id = new ObjectId(id);
             return await _context.Posts.ReplaceOneAsync(filter, task) != null;
         }
 
