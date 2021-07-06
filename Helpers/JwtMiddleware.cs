@@ -7,24 +7,27 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FetchApiTutorial.Helpers.Settings;
 
 
 namespace FetchApiTutorial.Helpers
 {
     public class JwtMiddleware
     {
-        private readonly RequestDelegate _next;
-        private readonly AppSettings _appSettings;
+        public const string TokenName = "JWT";
 
-        public JwtMiddleware(RequestDelegate next, IOptions<AppSettings> appSettings)
+        private readonly RequestDelegate _next;
+        private readonly JwtSettings _jwtSettings;
+
+        public JwtMiddleware(RequestDelegate next, IOptions<JwtSettings> appSettings)
         {
             _next = next;
-            _appSettings = appSettings.Value;
+            _jwtSettings = appSettings.Value;
         }
 
         public async Task Invoke(HttpContext context, IUserService userService)
         {
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            var token = context.Request.Cookies[TokenName]?.Split(" ").Last();//Header'a eklenirse "context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();"
 
             if (token != null)
                 await AttachUserContext(context, userService, token);
@@ -37,7 +40,7 @@ namespace FetchApiTutorial.Helpers
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
                 tokenHandler.ValidateToken(token,
                     new TokenValidationParameters
                     {
@@ -45,7 +48,7 @@ namespace FetchApiTutorial.Helpers
                         IssuerSigningKey = new SymmetricSecurityKey(key),
                         ValidateIssuer = false,
                         ValidateAudience = false,
-                        ClockSkew = TimeSpan.Zero
+                        ClockSkew = TimeSpan.Zero,
                     }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;

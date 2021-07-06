@@ -9,7 +9,7 @@
 
         public AuthenticateResponse(MyUser user, string token)
         {
-            Id = user.Id;
+            Id = user.Id.ToString();
             Username = user.Username;
             Token = token;
         }

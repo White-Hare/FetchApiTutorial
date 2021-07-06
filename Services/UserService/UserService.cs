@@ -1,5 +1,4 @@
 ﻿using FetchApiTutorial.Data;
-using FetchApiTutorial.Helpers;
 using FetchApiTutorial.Models.User;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -11,17 +10,18 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using FetchApiTutorial.Helpers.Settings;
 
 namespace FetchApiTutorial.Services.UserService
 {
     public class UserService : IUserService
     {
-        private readonly AppSettings _appSettings;
+        private readonly JwtSettings _jwtSettings;
         private readonly MongoDatabase _context;
 
-        public UserService(IOptions<AppSettings> appSettings, IDatabase context)
+        public UserService(IOptions<JwtSettings> appSettings, IDatabase context)
         {
-            _appSettings = appSettings.Value;
+            _jwtSettings = appSettings.Value;
             _context = (MongoDatabase)context;
         }
 
@@ -42,7 +42,7 @@ namespace FetchApiTutorial.Services.UserService
 
         public async Task<MyUser> GetByIdAsync(string id)
         {
-            var filter = Builders<MyUser>.Filter.Eq(t => t.Id, id);
+            var filter = Builders<MyUser>.Filter.Eq(t => t.Id, new ObjectId(id));
             return await _context.Users.Find(filter).SingleOrDefaultAsync();
         }
 
@@ -50,7 +50,7 @@ namespace FetchApiTutorial.Services.UserService
         {
             MyUser user = new MyUser
             {
-                Id = ObjectId.GenerateNewId().ToString(),
+                Id = ObjectId.GenerateNewId(),
                 Username = request.Username,
                 Password = request.Password,
             };
@@ -67,7 +67,7 @@ namespace FetchApiTutorial.Services.UserService
         private string GenerateJwtToken(MyUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) }),

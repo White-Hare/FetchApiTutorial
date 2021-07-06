@@ -1,8 +1,9 @@
 ﻿using FetchApiTutorial.Models.User;
 using FetchApiTutorial.Services.UserService;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using FetchApiTutorial.Helpers;
+using Microsoft.AspNetCore.Http;
 
 
 namespace FetchApiTutorial.Controllers.v1
@@ -21,10 +22,11 @@ namespace FetchApiTutorial.Controllers.v1
         public async Task<ActionResult<AuthenticateResponse>> Authenticate(AuthenticationRequest model)
         {
             var response = await _userService.Authenticate(model);
-
+            
             if (response == null)
                 return BadRequest(new { message = "Username or password is incorrect" });
 
+            Response.Cookies.Append(JwtMiddleware.TokenName, response.Token);
             return Ok(response);
         }
 
@@ -40,7 +42,7 @@ namespace FetchApiTutorial.Controllers.v1
             return Ok(response);
         }
 
-        [Authorize]
+        [Microsoft.AspNetCore.Authorization.Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

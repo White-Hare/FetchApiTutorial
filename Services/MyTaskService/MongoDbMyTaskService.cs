@@ -1,4 +1,5 @@
-﻿using FetchApiTutorial.Data;
+﻿using System;
+using FetchApiTutorial.Data;
 using FetchApiTutorial.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -23,13 +24,13 @@ namespace FetchApiTutorial.Services.MyTaskService
 
         public async Task<bool> DeleteAsync(string id)
         {
-            MyTask rt = await _context.Posts.FindOneAndDeleteAsync(Builders<MyTask>.Filter.Eq(t => t.Id, id));
+            MyTask rt = await _context.Posts.FindOneAndDeleteAsync(Builders<MyTask>.Filter.Eq(t => t.Id, new ObjectId(id)));
             return rt != null;
         }
 
         public async Task<MyTask> GetAsync(string id)
         {
-            var filter = Builders<MyTask>.Filter.Eq(t => t.Id, id);
+            var filter = Builders<MyTask>.Filter.Eq(t => t.Id, new ObjectId(id));
             return await _context.Posts.Find(filter).SingleOrDefaultAsync();
         }
 
@@ -40,10 +41,9 @@ namespace FetchApiTutorial.Services.MyTaskService
 
         public async Task<bool> UpdateAsync(string id, MyTask task)
         {
-            var filter = Builders<MyTask>.Filter.Eq(t => t.Id, id);
-
+            var filter = Builders<MyTask>.Filter.Eq(t => t.Id, new ObjectId(id));
+            task.Id = new ObjectId(id);
             return await _context.Posts.ReplaceOneAsync(filter, task) != null;
-
         }
 
     }

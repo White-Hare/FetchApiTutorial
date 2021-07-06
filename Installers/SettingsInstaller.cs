@@ -9,7 +9,7 @@ namespace FetchApiTutorial.Installers
     {
         public void InstallServices(IServiceCollection services, IConfiguration configuration)
         {
-            services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
+            services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
             services.Configure<DatabaseSettings>(configuration.GetSection("MongoDatabaseSettings"));
         }
     }

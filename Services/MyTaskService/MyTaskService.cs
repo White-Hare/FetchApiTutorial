@@ -1,4 +1,5 @@
-﻿using FetchApiTutorial.Helpers;
+﻿using System;
+using FetchApiTutorial.Helpers;
 using FetchApiTutorial.Models;
 using MongoDB.Bson;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace FetchApiTutorial.Services.MyTaskService
         public MyTaskService()
         {
             _tasks = new List<MyTask>();
-            _tasks.Add(new MyTask { Id = ObjectId.GenerateNewId().ToString(), Title = "deneme", Content = "icerik" });
+            _tasks.Add(new MyTask { Id = ObjectId.GenerateNewId(), Title = "deneme", Content = "icerik" });
         }
 
         public async Task AddAsync(MyTask task)
@@ -28,7 +29,7 @@ namespace FetchApiTutorial.Services.MyTaskService
 
         public async Task<bool> DeleteAsync(string id)
         {
-            MyTask rt = _tasks.Find(t => t.Id == id);
+            MyTask rt = _tasks.Find(t => t.Id.ToString() == id);
 
             if (rt != null)
             {
@@ -41,7 +42,7 @@ namespace FetchApiTutorial.Services.MyTaskService
 
         public async Task<MyTask> GetAsync(string id)
         {
-            return _tasks.Find(t => t.Id == id);
+            return _tasks.Find(t => t.Id.ToString() == id);
         }
 
         public async Task<List<MyTask>> GetAllAsync()
@@ -51,8 +52,10 @@ namespace FetchApiTutorial.Services.MyTaskService
 
         public async Task<bool> UpdateAsync(string id, MyTask task)
         {
-            MyTask rt = _tasks.Find(t => t.Id == id);
+            MyTask rt = _tasks.Find(t => t.Id == new ObjectId(id));
             int index = _tasks.IndexOf(rt);
+
+            Console.WriteLine(rt.Id);
 
             if (rt != null)
             {

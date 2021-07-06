@@ -1,10 +1,11 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace FetchApiTutorial.Models.User
 {
     public class MyUser
     {
-        [BsonId, BsonRequired] public string Id { get; set; }
+        [BsonId, BsonRepresentation(BsonType.ObjectId), BsonRequired] public ObjectId Id { get; set; }
         [BsonRequired,] public string Username { get; set; }
         [BsonRequired] public string Password { get; set; }
 

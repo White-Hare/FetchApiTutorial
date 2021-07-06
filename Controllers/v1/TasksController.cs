@@ -1,4 +1,5 @@
-﻿using FetchApiTutorial.Helpers;
+﻿using System;
+using FetchApiTutorial.Helpers;
 using FetchApiTutorial.Models;
 using FetchApiTutorial.Services.MyTaskService;
 using Microsoft.AspNetCore.Mvc;
@@ -53,11 +54,11 @@ namespace FetchApiTutorial.Controllers.v1
         {
             if (ModelState.IsValid && !task.Equals(new MyTask()))
             {
-                task.Id = ObjectId.GenerateNewId().ToString();
+                task.Id = ObjectId.GenerateNewId();
                 await _myTaskService.AddAsync(task);
             }
 
-            return CreatedAtAction("Get", new { id = task.Id }, task);
+            return CreatedAtAction("Get", new { id = task.Id.ToString() }, task);
         }
 
         // PUT api/<TasksController>/5
@@ -68,7 +69,7 @@ namespace FetchApiTutorial.Controllers.v1
             {
                 bool success = await _myTaskService.UpdateAsync(id, task);
                 if (success)
-                    return CreatedAtAction("Get", new { id = task.Id }, task);
+                    return CreatedAtAction("Get", new { id = task.Id.ToString()}, task);
             }
 
             return NotFound();

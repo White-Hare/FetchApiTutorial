@@ -2,8 +2,7 @@
 
 const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Authorization': "Bearer: " + Cookies.get('JWT')
+    'Content-Type': 'application/json'
 }
 
 let tasks = [];
@@ -62,7 +61,6 @@ function addItem() {
         });
 }
 
-
 function deleteItem(id) {
     fetch(`${uri}/${id}`,
             {
@@ -75,7 +73,6 @@ function deleteItem(id) {
             _goLoginPage();
         });
 };
-
 
 function displayEditForm(id) {
     const item = tasks.find(item => item.id === id);
@@ -95,7 +92,6 @@ function updateItem() {
         return false;
 
     const item = {
-        id:itemId,
         title: itemTitle,
         content: itemContent
     };

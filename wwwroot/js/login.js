@@ -34,9 +34,8 @@ function login() {
         .then(data => {
             console.log(data);
             if (data.token) {
-                Cookies.set('JWT', data.token);
+                //Cookies.set('JWT', data.token);
                 location.href = "index.html";
-                passwordTextbox.val('');
             }
         })
         .catch(error => {
