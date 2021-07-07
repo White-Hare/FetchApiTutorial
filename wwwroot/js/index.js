@@ -1,4 +1,4 @@
-﻿const uri = 'api/v1/Tasks';
+﻿const indexUri = 'api/v1/Tasks';
 
 
 const headers = {
@@ -11,7 +11,7 @@ let tasks = [];
 
 
 function getItems() {
-    fetch(uri,
+    fetch(indexUri,
             {
                 method: 'GET',
                 headers: headers
@@ -41,7 +41,7 @@ function addItem() {
         content: itemContent
     };
 
-    fetch(uri,
+    fetch(indexUri,
             {
                 method: 'POST',
                 headers: headers,
@@ -49,7 +49,6 @@ function addItem() {
             })
         .then(response => {
             response.json();
-            console.log(response);
         })
         .then(() => {
             getItems();
@@ -64,7 +63,7 @@ function addItem() {
 }
 
 function deleteItem(id) {
-    fetch(`${uri}/${id}`,
+    fetch(`${indexUri}/${id}`,
             {
                 method: 'DELETE',
                 headers: headers
@@ -98,9 +97,7 @@ function updateItem() {
         content: itemContent
     };
 
-    console.log(item);
-
-    fetch(`${uri}/${itemId}`, {
+    fetch(`${indexUri}/${itemId}`, {
         method: 'PUT',
         headers: headers,
         body: JSON.stringify(item)
@@ -123,7 +120,7 @@ function closeInput() {
 
 function _displayCount(itemCount) {
 
-    document.getElementById('counter').innerText = `Görev ${itemCount}`;
+    document.getElementById('counter').innerText = `${itemCount} Görev Var`;
 }
 
 function _displayItems(data) {
@@ -134,7 +131,6 @@ function _displayItems(data) {
 
     const button = document.createElement('button');
 
-    console.log(data);
     data.forEach(item => {
         let editButton = button.cloneNode(false);
         editButton.innerText = 'Düzenle';

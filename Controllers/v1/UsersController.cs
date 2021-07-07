@@ -35,12 +35,21 @@ namespace FetchApiTutorial.Controllers.v1
         }
 
         [HttpPost("Refresh"), AllowAnonymous]
-        public async Task<ActionResult<AuthenticateResponse>> RefreshToken(AuthenticationRequest model)
+        public async Task<ActionResult<AuthenticateResponse>> RefreshToken()
         {
             var token = Request.Cookies[JwtSettings.RefreshTokenKey];
+            if (token == null)
+                return NotFound();
+
             var response = await _userService.RefreshToken(token, IpAddress());
-            SetTokenCookie(response.RefreshToken);
-            return Ok(response);
+
+            if (response != null)
+            {
+                SetTokenCookie(response.RefreshToken);
+                return Ok(response);
+            }
+            else
+                return BadRequest("No Token Found To Refresh");
         }
 
         [HttpPost("Revoke")]
@@ -52,8 +61,12 @@ namespace FetchApiTutorial.Controllers.v1
             if (string.IsNullOrEmpty(token))
                 return BadRequest(new { message = "Token is required" });
 
-            await _userService.RevokeToken(token, IpAddress());
-            return Ok(new { message = "Token revoked" });
+            RefreshToken request = await _userService.RevokeToken(token, IpAddress());
+            if (request == null)
+                return BadRequest("Revoke Failed");
+
+
+            return Ok("Revoke Successful"); //new { message = "Token revoked" });
         }
 
         [HttpPost("Register"), AllowAnonymous]//Fix it
@@ -96,6 +109,8 @@ namespace FetchApiTutorial.Controllers.v1
                 HttpOnly = true,
                 Expires = DateTime.UtcNow.AddDays(2)
             };
+
+
             Response.Cookies.Append(JwtSettings.RefreshTokenKey, token, cookieOptions);
         }
 

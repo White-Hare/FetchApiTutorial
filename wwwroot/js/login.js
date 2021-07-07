@@ -1,5 +1,4 @@
-﻿const uri = 'api/v1/Users/Authenticate';
-
+﻿const authenticateUri = 'api/v1/Users/Authenticate';
 
 function login() {
     const usernameTextbox = $('#username');
@@ -17,7 +16,7 @@ function login() {
         password: password
     };
 
-    fetch(uri, {
+    fetch(authenticateUri, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',

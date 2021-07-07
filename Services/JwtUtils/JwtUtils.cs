@@ -10,6 +10,7 @@ using FetchApiTutorial.Helpers.Settings;
 using FetchApiTutorial.Models.User;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
 
 namespace FetchApiTutorial.Services.JwtUtils
 {
@@ -35,7 +36,7 @@ namespace FetchApiTutorial.Services.JwtUtils
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) }),
-                Expires = DateTime.Now.AddHours(1),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature)
             };
@@ -53,6 +54,7 @@ namespace FetchApiTutorial.Services.JwtUtils
             rngCryptoServiceProvider.GetBytes(randomBytes);
             var refreshToken = new RefreshToken
             {
+                Id = ObjectId.GenerateNewId(),
                 Token = Convert.ToBase64String(randomBytes),
                 Expires = DateTime.UtcNow.AddDays(7),
                 Created = DateTime.UtcNow,
@@ -64,8 +66,9 @@ namespace FetchApiTutorial.Services.JwtUtils
 
         public string? ValidateJwtToken(string token)
         {
-            if (token == null)
+            if (string.IsNullOrEmpty(token))
                 return null;
+
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
@@ -86,8 +89,9 @@ namespace FetchApiTutorial.Services.JwtUtils
 
                 return userId;
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e);
                 return null;
             }
         }

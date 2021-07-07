@@ -29,11 +29,11 @@ namespace FetchApiTutorial.Services.UserService
         public UserService(IOptions<JwtSettings> appSettings, IDatabase context, IJwtUtils jwtUtils)
         {
             _jwtSettings = appSettings.Value;
-            _context = (MongoDatabase) context;
+            _context = (MongoDatabase)context;
             _jwtUtils = jwtUtils;
         }
 
-        public async Task<AuthenticateResponse> Authenticate(AuthenticationRequest model, string ipAdress)
+        public async Task<AuthenticateResponse> Authenticate(AuthenticationRequest model, string ipAddress)
         {
             var user = await _context.Users.Find(t => t.Username == model.Username && t.Password == model.Password)
                 .SingleOrDefaultAsync();
@@ -41,12 +41,10 @@ namespace FetchApiTutorial.Services.UserService
 
 
             var token = _jwtUtils.GenerateJwtToken(user);
-            var refreshToken = _jwtUtils.GenerateRefreshToken(ipAdress);
+            var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
 
-            user.RefreshTokens.Add(refreshToken);
-            RemoveOldRefreshTokens(user);
-
-            await _context.Users.ReplaceOneAsync(x => x.Id == user.Id, user);
+            await AddToRefreshTokens(user, refreshToken);
+            await RemoveOldRefreshTokens(user);
 
             return new AuthenticateResponse(user, token, refreshToken.Token);
         }
@@ -65,26 +63,40 @@ namespace FetchApiTutorial.Services.UserService
         public async Task<AuthenticateResponse> RefreshToken(string token, string ipAddress)
         {
             var user = GetUserByRefreshToken(token);
-            var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+            var refreshToken = await GetRefreshToken(token);
 
-            if (refreshToken.IsRevoked)
+
+
+            if (refreshToken == null && user == null)
+                return null;
+
+            if (refreshToken.Revoked != null)
             {
                 // revoke all descendant tokens in case this token has been compromised
                 RevokeDescendantRefreshTokens(refreshToken, user, ipAddress,
                     $"Attempted reuse of revoked ancestor token: {token}");
             }
 
-            if (!refreshToken.IsActive)
-                return null;
+            try
+            {
+                if (!refreshToken.IsActive)
+                    return null;
+            }
+            catch (Exception)
+            {
+            }
+
+
+
 
             // replace old refresh token with a new one (rotate token)
-            var newRefreshToken = RotateRefreshToken(refreshToken, ipAddress);
-            user.RefreshTokens.Add(newRefreshToken);
+            var newRefreshToken = await RotateRefreshToken(user, refreshToken, ipAddress);
+            await AddToRefreshTokens(user, newRefreshToken);
 
             // remove old refresh tokens from user
-            RemoveOldRefreshTokens(user);
+            await RemoveOldRefreshTokens(user);
 
-            await _context.Users.ReplaceOneAsync(x => x.Id == user.Id, user);
+            await UpdateUser(user);
 
             // generate new jwt
             var jwtToken = _jwtUtils.GenerateJwtToken(user);
@@ -92,17 +104,19 @@ namespace FetchApiTutorial.Services.UserService
             return new AuthenticateResponse(user, jwtToken, newRefreshToken.Token);
         }
 
-        public async Task RevokeToken(string token, string ipAddress)
+        public async Task<RefreshToken> RevokeToken(string token, string ipAddress)
         {
             var user = GetUserByRefreshToken(token);
-            var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+            if (user == null) return null;
+
+            var refreshToken = await GetRefreshToken(token);
+
 
             if (!refreshToken.IsActive)
-                return;
+                return null;
 
             // revoke token and save
-            RevokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");
-            await _context.Users.ReplaceOneAsync(x => x.Id == user.Id, user);
+            return await RevokeRefreshToken(user, refreshToken, ipAddress, "Revoked without replacement");
         }
 
         public async Task<MyUser> RegisterUserAsync(AuthenticationRequest request)
@@ -126,51 +140,79 @@ namespace FetchApiTutorial.Services.UserService
 
         private MyUser GetUserByRefreshToken(string token)
         {
-            var user = _context.Users.Find(u => u.RefreshTokens.Any(t => t.Token == token)).SingleOrDefault();
+            var filter = Builders<MyUser>.Filter.ElemMatch(u => u.RefreshTokens, x => x.Token == token);
+            var user = _context.Users.Find(filter).SingleOrDefault();
             return user;
         }
 
-        private RefreshToken RotateRefreshToken(RefreshToken refreshToken, string ipAddress)
+        private async Task<RefreshToken> RotateRefreshToken(MyUser user, RefreshToken refreshToken, string ipAddress)
         {
             var newRefreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
-            RevokeRefreshToken(refreshToken, ipAddress, "Replaced by new token", newRefreshToken.Token);
+            await RevokeRefreshToken(user, refreshToken, ipAddress, "Replaced by new token", newRefreshToken.Token);
             return newRefreshToken;
         }
 
-        private void RemoveOldRefreshTokens(MyUser user)
+        private async Task RemoveOldRefreshTokens(MyUser user)
         {
             // remove old inactive refresh tokens from user based on TTL in app settings
-            user.RefreshTokens.RemoveAll(x =>
-                !x.IsActive &&
-                x.Created.AddDays(_jwtSettings.RefreshTokenTTL) <= DateTime.UtcNow);
+            var update = Builders<MyUser>.Update.PullFilter(u => u.RefreshTokens, rt => rt.Revoked != null &&
+                  rt.Created > DateTime.UtcNow.Subtract(TimeSpan.FromDays(_jwtSettings.RefreshTokenTTL)));
+
+            await _context.Users.FindOneAndUpdateAsync(u => u.Id == user.Id, update);
         }
 
-        private void RevokeDescendantRefreshTokens(RefreshToken refreshToken, MyUser user, string ipAddress,
+        private async void RevokeDescendantRefreshTokens(RefreshToken refreshToken, MyUser user, string ipAddress,
             string reason)
         {
             // recursively traverse the refresh token chain and ensure all descendants are revoked
             if (!string.IsNullOrEmpty(refreshToken.ReplacedByToken))
             {
-                var childToken = user.RefreshTokens.SingleOrDefault(x => x.Token == refreshToken.ReplacedByToken);
+                var childToken = await GetRefreshToken(refreshToken.ReplacedByToken);
                 if (childToken != null && childToken.IsActive)
-                    RevokeRefreshToken(childToken, ipAddress, reason);
+                    await RevokeRefreshToken(user, childToken, ipAddress, reason);
                 else
                     RevokeDescendantRefreshTokens(childToken, user, ipAddress, reason);
             }
         }
 
-        private void RevokeRefreshToken(RefreshToken token, string ipAddress, string reason = null,
+        private async Task<RefreshToken> RevokeRefreshToken(MyUser user, RefreshToken token, string ipAddress, string reason = null,
             string replacedByToken = null)
         {
-            token.Revoked = DateTime.UtcNow;
-            token.RevokedByIp = ipAddress;
-            token.ReasonRevoked = reason;
-            token.ReplacedByToken = replacedByToken;
+
+            var filter = Builders<MyUser>.Filter.Eq(x => x.Id, user.Id) &
+                         Builders<MyUser>.Filter.ElemMatch(x => x.RefreshTokens, Builders<RefreshToken>.Filter.Eq(t => t.Id, token.Id));
+
+            var update = Builders<MyUser>.Update
+                .Set(u => u.RefreshTokens[-1].Revoked, DateTime.UtcNow)
+                .Set(u => u.RefreshTokens[-1].RevokedByIp, ipAddress)
+                .Set(u => u.RefreshTokens[-1].ReasonRevoked, reason)
+                .Set(u => u.RefreshTokens[-1].ReplacedByToken, replacedByToken);
+
+            return (await _context.Users.FindOneAndUpdateAsync(filter, update))?.RefreshTokens.Find(t => t.Id == token.Id);
+
         }
 
-        private void UpdateUser()
+        private async Task UpdateUser(MyUser user)
         {
-            //var update = Builders<MyUser>.Update.PullFilter()
+            var update = Builders<MyUser>.Update.PullFilter(u => u.RefreshTokens, rt => rt.Revoked == null && DateTime.UtcNow < rt.Expires);
+            await _context.Users.FindOneAndUpdateAsync(u => u.Id == user.Id, update);
+        }
+
+        private async Task<RefreshToken> GetRefreshToken(string token)
+        {
+            var filter = Builders<MyUser>.Filter.ElemMatch(x => x.RefreshTokens, x => x.Token == token);
+            MyUser user = await _context.Users.Find(filter).SingleOrDefaultAsync();
+            if (user != null && user.RefreshTokens.Any())
+                return user.RefreshTokens.Find(t => t.Token == token);
+
+            return null;
+        }
+
+        private async Task AddToRefreshTokens(MyUser user, RefreshToken newRefreshToken)
+        {
+            var filter = Builders<MyUser>.Filter.Eq(u => u.Id, user.Id);
+            var update = Builders<MyUser>.Update.Push(u => u.RefreshTokens, newRefreshToken);
+            await _context.Users.UpdateOneAsync(filter, update);
         }
     }
 }

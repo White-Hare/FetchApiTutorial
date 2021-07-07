@@ -11,15 +11,15 @@ namespace FetchApiTutorial.Models.User
     {
         [BsonId, BsonRepresentation(BsonType.ObjectId)]public ObjectId Id { get; set; }
         public string Token { get; set; }
-        [BsonRepresentation(BsonType.DateTime)]public DateTime Expires { get; set; }
-        [BsonRepresentation(BsonType.DateTime)]public DateTime Created { get; set; }
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc),BsonRepresentation(BsonType.DateTime)]public DateTime Expires { get; set; }
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc), BsonRepresentation(BsonType.DateTime)]public DateTime Created { get; set; }
         public string CreatedByIp { get; set; }
-        [BsonRepresentation(BsonType.DateTime)]public DateTime? Revoked { get; set; }
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc), BsonRepresentation(BsonType.DateTime)]public DateTime? Revoked { get; set; }
         public string RevokedByIp { get; set; }
         public string ReplacedByToken { get; set; }
         public string ReasonRevoked { get; set; }
-        public bool IsExpired => DateTime.UtcNow >= Expires;
-        public bool IsRevoked => Revoked != null;
-        public bool IsActive => !IsRevoked && !IsExpired;
+        [BsonIgnore]public bool IsActive => Revoked == null && DateTime.UtcNow < Expires;
+            
+        
     }
 }

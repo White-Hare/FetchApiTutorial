@@ -14,43 +14,49 @@
 </head>
 
 <body>
-
-    <main class="container p-3">
-        <h1>Görevler</h1>
-        <h3>Ekle</h3>
-        <form class="input-group form-group" action="javascript:void(0);" method="POST" onsubmit="addItem()">
-            <input type="hidden" id="add-id">
-            <input class="form-control" type="text" id="add-title" placeholder="Başlık">
-            <input class="form-control"type="text" id="add-content" placeholder="İçerik">
-            <input class="btn btn-dark" type="submit" value="Ekle">
-        </form>
-
-        <div id="editForm">
-            <h3>Düzenle</h3>
-            <form class="input-group form-group" action="javascript:void(0);" onsubmit="updateItem()">
-                <input type="hidden" id="edit-id">
-                <input class="form-control"type="text" id="edit-title">
-                <input class="form-control"type="text" id="edit-content">
-                <input class="btn btn-dark" type="submit" value="Kaydet">
-                <a class="btn btn-dark" onclick="closeInput()" aria-label="Close">&#10006;</a>
-            </form>
+<div class="justify-content-end d-flex flex-row">
+    <button class="btn btn-light" onclick="logout()" value="Çıkış Yap"></button>
+</div>
+    <main class="container p-3 justify-content-center d-flex flex-column">
+        <div class="mb-5">
+            <h1 class="text-center">Görevler</h1>
+            <h3 class="text-center">Ekle</h3>
         </div>
+        <div class="mb-5">
+            <form class="input-group form-group" action="javascript:void(0);" method="POST" onsubmit="addItem()">
+                <input type="hidden" id="add-id">
+                <input class="form-control" type="text" id="add-title" placeholder="Başlık">
+                <input class="form-control" type="text" id="add-content" placeholder="İçerik">
+                <input class="btn btn-dark" type="submit" value="Ekle">
+            </form>
 
-        <p id="counter"></p>
+            <div id="editForm">
+                <h3>Düzenle</h3>
+                <form class="input-group form-group" action="javascript:void(0);" onsubmit="updateItem()">
+                    <input type="hidden" id="edit-id">
+                    <input class="form-control" type="text" id="edit-title">
+                    <input class="form-control" type="text" id="edit-content">
+                    <input class="btn btn-dark" type="submit" value="Kaydet">
+                    <a class="btn btn-dark" onclick="closeInput()" aria-label="Close">&#10006;</a>
+                </form>
+            </div>
 
-        <table class="table">
-            <tr>
-                <th scope="col">Başlık</th>
-                <th scope="col">İçerik</th>
-                <th scope="col">Düzenle</th>
-                <th scope="col">Sil</th>
-            </tr>
-            <tbody id="tasks"></tbody>
-        </table>
+            <p id="counter"></p>
 
-        <script type="text/javascript">
-            getItems();
-        </script>
+            <table class="table">
+                <tr>
+                    <th scope="col">Başlık</th>
+                    <th scope="col">İçerik</th>
+                    <th scope="col">Düzenle</th>
+                    <th scope="col">Sil</th>
+                </tr>
+                <tbody id="tasks"></tbody>
+            </table>
+
+            <script type="text/javascript">
+                getItems();
+            </script>
+        </div>
     </main>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
