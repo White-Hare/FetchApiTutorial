@@ -4,7 +4,7 @@
 const headers = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer: ' + Cookies.get('Authorization')
+    //'Authorization': 'Bearer: ' + Cookies.get('Authorization')
 }
 
 let tasks = [];

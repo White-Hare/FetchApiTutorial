@@ -24,7 +24,7 @@ namespace FetchApiTutorial.Helpers
 
         public async Task Invoke(HttpContext context, IUserService userService, IJwtUtils jwtUtils)
         {
-            var token = context.Request.Cookies[JwtSettings.TokenKey]?.Split(" ").Last() ?? 
+            var token = context.Request.Cookies[JwtSettings.TokenKey]?? 
                         context.Request.Headers[JwtSettings.TokenKey].ToString().Split(" ").Last();
             
             var userId = jwtUtils.ValidateJwtToken(token);

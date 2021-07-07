@@ -30,7 +30,9 @@ namespace FetchApiTutorial.Controllers.v1
             if (response == null)
                 return BadRequest("Login Failed");
 
-            SetTokenCookie(response.RefreshToken);
+
+            SetTokenCookie(response.JwtToken);
+            SetRefreshTokenCookie(response.RefreshToken);
             return Ok(response);
         }
 
@@ -45,7 +47,7 @@ namespace FetchApiTutorial.Controllers.v1
 
             if (response != null)
             {
-                SetTokenCookie(response.RefreshToken);
+                SetRefreshTokenCookie(response.RefreshToken);
                 return Ok(response);
             }
             else
@@ -102,6 +104,19 @@ namespace FetchApiTutorial.Controllers.v1
             return Ok(users);
         }
         private void SetTokenCookie(string token)
+        {
+            // append cookie with refresh token to the http response
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddMinutes(15)
+            };
+
+
+            Response.Cookies.Append(JwtSettings.TokenKey, token, cookieOptions);
+        }
+
+        private void SetRefreshTokenCookie(string token)
         {
             // append cookie with refresh token to the http response
             var cookieOptions = new CookieOptions
